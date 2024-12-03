@@ -1,6 +1,6 @@
 # Part 1
 
-First, extract all `mul(\d{1,3},\d{1,3})` from `input.txt`, and then format it for `awk`
+1. Extract valid data from `input.txt`: matches `mul(\d{1,3},\d{1,3})`
 
 <details>
 <summary><code>ggrep --version</code></summary>
@@ -9,20 +9,32 @@ First, extract all `mul(\d{1,3},\d{1,3})` from `input.txt`, and then format it f
 </details>
 
 ```zsh
-ggrep --version
 ggrep -Eo 'mul\([1-9][0-9]{0,2},[1-9][0-9]{0,2}\)' input.txt > muls.txt
-ggrep -o '[0-9]*,[0-9]*' muls.txt > muls_clean.txt
+```
 
+2. Format it for `awk` by removing `mul(`, `)`
+
+```zsh
+ggrep -o '[0-9]*,[0-9]*' muls.txt > muls_clean.txt
+```
+
+Run the program to multiply values
+
+```zsh
 awk -F, -f program_1.awk muls_clean.txt
 ```
 
 # Part 2
 
-Expand extraction to include control functions, and then use the order of their appearance to control flags in `awk`
+1. Expand match criteria to extract control function calls. Then replicate previous formatting step to allow for control calls.
 
 ```zsh
-ggrep -Eo '(mul\([1-9][0-9]{0,2},[1-9][0-9]{0,2}\)|do\(\)|don'"'"'t\(\))' input.txt > muls_and_control.txt
-ggrep -Eo '([0-9]*,[0-9]*|d.*)' muls_and_control.txt > muls_and_control_clean.txt
+ggrep -Eo '(mul\([1-9][0-9]{0,2},[1-9][0-9]{0,2}\)|do\(\)|don'"'"'t\(\))' input.txt > muls_and_controls.txt
+ggrep -Eo '([0-9]*,[0-9]*|d.*)' muls_and_controls.txt > muls_and_controls_clean.txt
+```
 
-awk -F, -f program_2.awk muls_and_control_clean.txt
+Run the program to multiply values (while ignoring others)
+
+```zsh
+awk -F, -f program_2.awk muls_and_controls_clean.txt
 ```
