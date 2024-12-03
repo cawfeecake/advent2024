@@ -3,7 +3,7 @@
 First, extract all `mul(\d{1,3},\d{1,3})` from `input.txt`, and then format it for `awk`
 
 <details>
-<summary>`ggrep --version`</summary>
+<summary><code>ggrep --version</code></summary>
 
 `ggrep (GNU grep) 3.11 ...`
 </details>
