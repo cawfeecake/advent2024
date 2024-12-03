@@ -3,13 +3,13 @@
 1. Extract valid data from `input.txt`: matches `mul(\d{1,3},\d{1,3})`
 
 <details>
-<summary><code>ggrep --version</code></summary>
+<summary>Output of: <code>ggrep --version</code></summary>
 
 `ggrep (GNU grep) 3.11 ...`
 </details>
 
 ```zsh
-ggrep -Eo 'mul\([1-9][0-9]{0,2},[1-9][0-9]{0,2}\)' input.txt > muls.txt
+ggrep -Eo 'mul\([0-9]{1,3},[0-9]{1,3}\)' input.txt > muls.txt
 ```
 
 2. Format it for `awk` by removing `mul(`, `)`
@@ -29,7 +29,7 @@ awk -F, -f program_1.awk muls_clean.txt
 1. Expand match criteria to extract control function calls. Then replicate previous formatting step to allow for control calls.
 
 ```zsh
-ggrep -Eo '(mul\([1-9][0-9]{0,2},[1-9][0-9]{0,2}\)|do\(\)|don'"'"'t\(\))' input.txt > muls_and_controls.txt
+ggrep -Eo '(mul\([0-9]{1,3},[0-9]{1,3}\)|do\(\)|don'"'"'t\(\))' input.txt > muls_and_controls.txt
 ggrep -Eo '([0-9]*,[0-9]*|d.*)' muls_and_controls.txt > muls_and_controls_clean.txt
 ```
 
