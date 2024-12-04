@@ -7,7 +7,7 @@ def check(grid: list[str], word: str, start: tuple[int, int], update: tuple[int,
     word_i = 0
     while (
             y < len(grid) and x < len(grid[y]) # TODO: test if this conditional holds up for a non-square `grid`
-            and x >= 0 and y >=0 # note: this prevents a word match from wrapping around
+            and x >= 0 and y >=0 # note: prevents word from matching around across left-side/bottom-side
         ): 
         if grid[y][x] != word[word_i]:
             return False
@@ -20,6 +20,8 @@ def check(grid: list[str], word: str, start: tuple[int, int], update: tuple[int,
 
         # update where to check next...
         x, y = x + x_update, y + y_update
+
+    return False
 
 # Helpers for: cardinal directions
 def check_left(grid, word, start):
@@ -84,4 +86,4 @@ for i in range(len(grid)):
                 if b:
                     found += 1
 
-print(f"Found {found} words in {input_file}")
+print(f"Found {found} instances of {word} in {input_file}")
