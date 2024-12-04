@@ -1,8 +1,3 @@
-# Algorithm for finding "X" of a word in a search:
-# - determine center letter of word (restricts this to only words of odd length)
-# - find it within search input
-# - check 4 positions around found letter for the word's prefix; if there's a match see if opposite side has match for word's suffix
-
 def check(grid: list[str], word: str, start: tuple[int, int], update: tuple[int, int]) -> bool:
     x_update, y_update = update
     assert not (x_update == 0 and y_update == 0), "at least 1 value of `update` must be non-zero"
@@ -27,43 +22,38 @@ def check(grid: list[str], word: str, start: tuple[int, int], update: tuple[int,
 
     return False
 
-# Helpers: check for prefix, then matching suffix
-def check_left_and_up(grid, prefix, suffix, start_x, start_y):
+def check_around_in_direction(grid, prefix, suffix, start, direction):
+    start_x, start_y = start
+    direction_x, direction_y = direction
+    if check(grid, prefix[::-1], (start_x + direction_x, start_y + direction_y), direction):
+        return check(grid, suffix, (start_x - direction_x, start_y - direction_y), (direction_x * -1, direction_y * -1))
+    return False
+
+# Helpers: individual directions that make an "X" (if starting from center)
+def check_left_and_up(grid, prefix, suffix, start):
     direction = (1, -1)
-    direction_x, direction_y = direction
-    if check(grid, prefix[::-1], (start_x + direction_x, start_y + direction_y), direction):
-        return check(grid, suffix, (start_x - direction_x, start_y - direction_y), (direction_x * -1, direction_y * -1))
-    return False
+    return check_around_in_direction(grid, prefix, suffix, start, direction)
 
-def check_right_and_up(grid, prefix, suffix, start_x, start_y):
+def check_right_and_up(grid, prefix, suffix, start):
     direction = (-1, -1)
-    direction_x, direction_y = direction
-    if check(grid, prefix[::-1], (start_x + direction_x, start_y + direction_y), direction):
-        return check(grid, suffix, (start_x - direction_x, start_y - direction_y), (direction_x * -1, direction_y * -1))
-    return False
+    return check_around_in_direction(grid, prefix, suffix, start, direction)
 
-def check_left_and_down(grid, prefix, suffix, start_x, start_y):
+def check_left_and_down(grid, prefix, suffix, start):
     direction = (1, 1)
-    direction_x, direction_y = direction
-    if check(grid, prefix[::-1], (start_x + direction_x, start_y + direction_y), direction):
-        return check(grid, suffix, (start_x - direction_x, start_y - direction_y), (direction_x * -1, direction_y * -1))
-    return False
+    return check_around_in_direction(grid, prefix, suffix, start, direction)
 
-def check_right_and_down(grid, prefix, suffix, start_x, start_y):
+def check_right_and_down(grid, prefix, suffix, start):
     direction = (-1, 1)
-    direction_x, direction_y = direction
-    if check(grid, prefix[::-1], (start_x + direction_x, start_y + direction_y), direction):
-        return check(grid, suffix, (start_x - direction_x, start_y - direction_y), (direction_x * -1, direction_y * -1))
-    return False
+    return check_around_in_direction(grid, prefix, suffix, start, direction)
 
-# Helpers: check word forwards and back along an "X" slash
-def check_forward_slash(grid, prefix, suffix, start_x, start_y):
-    return check_left_and_up(grid, prefix, suffix, start_x, start_y) \
-        or check_right_and_down(grid, prefix, suffix, start_x, start_y)
+# Helpers: true if "word" is either forwards or backwards along a slash of "X"
+def check_forward_slash(grid, prefix, suffix, start):
+    return check_left_and_up(grid, prefix, suffix, start) \
+        or check_right_and_down(grid, prefix, suffix, start)
 
-def check_back_slash(grid, prefix, suffix, start_x, start_y):
-    return check_right_and_up(grid, prefix, suffix, start_x, start_y) \
-        or check_left_and_down(grid, prefix, suffix, start_x, start_y)
+def check_back_slash(grid, prefix, suffix, start):
+    return check_right_and_up(grid, prefix, suffix, start) \
+        or check_left_and_down(grid, prefix, suffix, start)
 
 import sys
 
@@ -94,9 +84,9 @@ for i in range(len(grid)):
     row = grid[i]
     for j in range(len(row)):
         if row[j] == center:
-            if check_forward_slash(grid, prefix, suffix, j, i) \
-                    and check_back_slash(grid, prefix, suffix, j, i):
-                #print(f"Found match for {word} centered at ({j}, {i})") # DEBUG
+            if check_forward_slash(grid, prefix, suffix, (j, i)) \
+                    and check_back_slash(grid, prefix, suffix, (j, i)):
+                print(f"Found match for {word} centered at ({j}, {i})") # DEBUG
                 found += 1
 
 print(f"Found {found} \"X\" of the word {word} in {input_file}")
