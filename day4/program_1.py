@@ -1,8 +1,19 @@
-def check(grid: list[str], word: str, start: tuple[int, int], update: tuple[int, int]) -> bool:
+from enum import Enum
+
+class Direction(Enum):
+    LEFT = (1, 0)
+    RIGHT = (-1, 0)
+    UP = (0, -1)
+    DOWN = (0, 1)
+    LEFT_AND_UP = (1, -1)
+    LEFT_AND_DOWN = (1, 1)
+    RIGHT_AND_UP = (-1, -1)
+    RIGHT_AND_DOWN = (-1, 1)
+
+def check(grid: list[str], word: str, start: tuple[int, int], update: Direction) -> bool:
     x, y = start
     assert x >= 0 and y >= 0, "`start` position must be non-negative"
-    x_update, y_update = update
-    assert not (x_update == 0 and y_update == 0), "at least 1 value of `update` must be non-zero"
+    x_update, y_update = update.value
 
     word_i = 0
     while (
@@ -15,7 +26,6 @@ def check(grid: list[str], word: str, start: tuple[int, int], update: tuple[int,
         # update position in `word`, and see if we've seen it all...
         word_i += 1
         if word_i == len(word):
-            #print(f"Found match for {word} starting at {start} and going {update}") # DEBUG
             return True
 
         # update where to check next...
@@ -23,33 +33,28 @@ def check(grid: list[str], word: str, start: tuple[int, int], update: tuple[int,
 
     return False
 
-# Helpers for: cardinal directions
-def check_left(grid, word, start):
-    return check(grid, word, start, (1, 0))
+def get_locations(grid: list[any], start: tuple[int, int], length: int, direction: Direction) -> list[tuple[int, int]], bool:
+    locations = []
 
-def check_right(grid, word, start):
-    return check(grid, word, start, (-1, 0))
+    x, y = start
+    x_update, y_update = update.value
+    i = 0
+    while (
+            y < len(grid) and x < len(grid[y])
+            and x >= 0 and y >= 0
+        ):
+        locations.append((x, y))
 
-def check_up(grid, word, start):
-    return check(grid, word, start, (0, -1))
+        i += 1
+        if i == length:
+            return locations, True
 
-def check_down(grid, word, start):
-    return check(grid, word, start, (0, 1))
+        x, y = x + x_update, y + y_update
 
-# Helpers for: diagnol directions
-def check_left_and_up(grid, word, start):
-    return check(grid, word, start, (1, -1))
-
-def check_right_and_up(grid, word, start):
-    return check(grid, word, start, (-1, -1))
-
-def check_left_and_down(grid, word, start):
-    return check(grid, word, start, (1, 1))
-
-def check_right_and_down(grid, word, start):
-    return check(grid, word, start, (-1, 1))
+    return locations, False
 
 import sys
+import os
 
 word = sys.argv[1]
 assert len(word) > 0, "Must provide word to search for as the first argument"
@@ -57,6 +62,12 @@ word = word.lower()
 
 input_file = sys.argv[2]
 assert len(input_file) > 0, "Must provide input's filepath as the second argument"
+
+_as_debug = False
+try:
+    _as_debug = os.environ["DEBUG"] == "1"
+except:
+    pass
 
 grid = []
 with open(input_file, "r") as file:
@@ -68,22 +79,27 @@ assert len(grid) > 0, "Input file must not be empty"
 
 word_start = word[0]
 found = 0
+if as_debug:
+    found_set = set()
 for i in range(len(grid)):
     row = grid[i]
     for j in range(len(row)):
         if row[j] == word_start:
-            bs = [
-                check_left(grid, word, (j, i)),
-                check_right(grid, word, (j, i)),
-                check_up(grid, word, (j, i)),
-                check_down(grid, word, (j, i)),
-                check_left_and_up(grid, word, (j, i)),
-                check_right_and_up(grid, word, (j, i)),
-                check_left_and_down(grid, word, (j, i)),
-                check_right_and_down(grid, word, (j, i))
+            start = (j, i)
+            ds = [
+                Direction.LEFT,
+                Direction.RIGHT,
+                Direction.UP,
+                Direction.DOWN,
+                Direction.LEFT_AND_UP,
+                Direction.LEFT_AND_DOWN,
+                Direction.RIGHT_AND_UP,
+                Direction.RIGHT_AND_DOWN
             ]
-            for b in bs:
-                if b:
+            for d in ds:
+                if check(grid, word, start, d):
+                    if _as_debug:
+                        print(f"Found match for {word} starting at {start} due: {d.name}")
                     found += 1
 
 print(f"Found {found} instances of {word} in {input_file}")
