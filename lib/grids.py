@@ -1,4 +1,4 @@
-from typing import Callable, Generator, Optional
+from typing import Callable, Generator, Optional, Type
 
 from .directions import Direction
 
@@ -12,21 +12,21 @@ class Grid:
         self.rows = len(self.grid)
 
     def __str__(self):
-        return f"Grid(rows={self.rows})"
-
-    def __repr__(self):
         rows = []
         for y in range(self.rows):
             row = []
             for x in range(len(self.grid[y])):
                 row.append(str(self.grid[y][x]))
-            rows.append(f"[ {", ".join(row)} ]")
+            rows.append("".join(row))
         return "\n".join(rows)
+
+    def __repr__(self):
+        return self.__str__()
 
     def _is_in_bounds(self, x: int, y: int):
         return 0 <= y < self.rows and 0 <= x < len(self.grid[y])
 
-    # usage note: doesn't work if the underlying rows don't support assignment
+    # note: will throw an error if the rows of `self.grid` don't support assignment (e.g. happens when rows are strings)
     def set_value(self, x: int, y: int, value: any) -> None:
         if self._is_in_bounds(x, y):
             self.grid[y][x] = value
@@ -46,7 +46,7 @@ class Grid:
         fits = self._is_in_bounds(x, y)
         for _ in range(length):
             if not self._is_in_bounds(x, y):
-                completed = False
+                fits = False
                 break
             points.append((x, y))
             x, y = x + dx, y + dy
@@ -57,12 +57,21 @@ class Grid:
         points, fits  = self.get_points(start, direction, length)
         return [self._get_value(x, y) for x, y in points], fits
 
-    # usage note: this won't work if row of Grid are str (as they don't support assignment at an index)
-    def mask(self, mask_generator: Callable[[], Generator[list[((int, int), any)], None, None]]) -> None:
-        # this algo. works best if the size of `mask_generator` is less than or equal to the total size of `self.grid`
+    def mask(self, mask_generator: Callable[[], Generator[list[((int, int), any)], None, None]]) -> "Grid":
+        def copy_grid():
+            for y in range(self.rows):
+                row = []
+                for x in range(len(self.grid[y])):
+                    row.append(self.get_value(x, y))
+                yield row
+        masked_copy = Grid(copy_grid)
+
+        # note: algo. works best if the size of `mask_generator` is less than or equal to the entire size of `self.grid`
         for mask in mask_generator():
             point, value = mask
             x, y = point
-            if self._is_in_bounds(x, y):
-                self.set_value(x, y, value)
+            if masked_copy._is_in_bounds(x, y):
+                masked_copy.set_value(x, y, value)
+
+        return masked_copy
 

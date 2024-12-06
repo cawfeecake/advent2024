@@ -48,7 +48,7 @@ def main():
         def _dot_grid(n: int):
             def f():
                 for i in range(n):
-                    yield list("." * n)
+                    yield "." * n
             return f
         dots = Grid(_dot_grid(ws.rows))
 
@@ -56,8 +56,8 @@ def main():
             for mask in found_mask:
                 yield mask
 
-        dots.mask(_mask_func)
-        print(dots.__repr__())
+        masked_dots = dots.mask(_mask_func)
+        print(masked_dots)
 
     print(f"Found {found} instances of {word} in {input_file}")
 
