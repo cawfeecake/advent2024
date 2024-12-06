@@ -1,4 +1,4 @@
-def check(grid: list[str], word: str, start: tuple[int, int], update: tuple[int, int]) -> bool:
+def check(grid: list[str], word: str, start: (int, int), update: (int, int)) -> bool:
     x_update, y_update = update
     assert not (x_update == 0 and y_update == 0), "at least 1 value of `update` must be non-zero"
 

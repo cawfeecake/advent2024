@@ -1,105 +1,66 @@
-from enum import Enum
-
-class Direction(Enum):
-    LEFT = (1, 0)
-    RIGHT = (-1, 0)
-    UP = (0, -1)
-    DOWN = (0, 1)
-    LEFT_AND_UP = (1, -1)
-    LEFT_AND_DOWN = (1, 1)
-    RIGHT_AND_UP = (-1, -1)
-    RIGHT_AND_DOWN = (-1, 1)
-
-def check(grid: list[str], word: str, start: tuple[int, int], update: Direction) -> bool:
-    x, y = start
-    assert x >= 0 and y >= 0, "`start` position must be non-negative"
-    x_update, y_update = update.value
-
-    word_i = 0
-    while (
-            y < len(grid) and x < len(grid[y]) # TODO: test if this conditional holds up for a non-square `grid`
-            and x >= 0 and y >=0 # note: prevents word from matching around across left-side/bottom-side
-        ): 
-        if grid[y][x] != word[word_i]:
-            return False
-
-        # update position in `word`, and see if we've seen it all...
-        word_i += 1
-        if word_i == len(word):
-            return True
-
-        # update where to check next...
-        x, y = x + x_update, y + y_update
-
-    return False
-
-def get_locations(grid: list[any], start: tuple[int, int], length: int, direction: Direction) -> list[tuple[int, int]], bool:
-    locations = []
-
-    x, y = start
-    x_update, y_update = update.value
-    i = 0
-    while (
-            y < len(grid) and x < len(grid[y])
-            and x >= 0 and y >= 0
-        ):
-        locations.append((x, y))
-
-        i += 1
-        if i == length:
-            return locations, True
-
-        x, y = x + x_update, y + y_update
-
-    return locations, False
-
-import sys
 import os
+import sys
 
-word = sys.argv[1]
-assert len(word) > 0, "Must provide word to search for as the first argument"
-word = word.lower()
+from lib.grids import Grid
+from lib.directions import Direction
 
-input_file = sys.argv[2]
-assert len(input_file) > 0, "Must provide input's filepath as the second argument"
+def main():
+    word = sys.argv[1]
+    assert len(word) > 0, "Must provide word to search for as the first argument"
+    word = word.upper()
 
-_as_debug = False
-try:
-    _as_debug = os.environ["DEBUG"] == "1"
-except:
-    pass
+    input_file = sys.argv[2]
+    assert len(input_file) > 0, "Must provide input's filepath as the second argument"
 
-grid = []
-with open(input_file, "r") as file:
-    for line in file:
-        row = line.strip() # `.strip()` removes leading and trailing whitespace
-        if len(row) > 0:
-            grid.append(row.lower())
-assert len(grid) > 0, "Input file must not be empty"
+    _as_debug = False
+    try:
+        _as_debug = os.environ["DEBUG"] == "1"
+    except:
+        pass
 
-word_start = word[0]
-found = 0
-if as_debug:
-    found_set = set()
-for i in range(len(grid)):
-    row = grid[i]
-    for j in range(len(row)):
-        if row[j] == word_start:
-            start = (j, i)
-            ds = [
-                Direction.LEFT,
-                Direction.RIGHT,
-                Direction.UP,
-                Direction.DOWN,
-                Direction.LEFT_AND_UP,
-                Direction.LEFT_AND_DOWN,
-                Direction.RIGHT_AND_UP,
-                Direction.RIGHT_AND_DOWN
-            ]
-            for d in ds:
-                if check(grid, word, start, d):
-                    if _as_debug:
-                        print(f"Found match for {word} starting at {start} due: {d.name}")
-                    found += 1
+    def open_and_parse_input():
+        with open(input_file, "r") as file:
+            for line in file:
+                row = line.strip()  # `.strip()` removes leading and trailing whitespace
+                if len(row) > 0:
+                    yield row.upper()
 
-print(f"Found {found} instances of {word} in {input_file}")
+    ws = Grid(open_and_parse_input)
+    assert ws.rows > 0, "Input file must not be empty"
+
+    word_start = word[0]
+    found, found_mask = 0, []
+    for i in range(ws.rows):
+        row = ws.grid[i]
+        for j in range(len(row)):
+            if row[j] == word_start:
+                start = (j, i)
+                for d in Direction:  # iterates thru all 8 directions
+                    values, fits = ws.get_values(start, d, len(word))
+                    if fits and word == "".join(values):
+                        if _as_debug:
+                            points, _ = ws.get_points(start, d, len(word))
+                            found_mask.extend([((x, y), ws.get_value(x, y)) for x, y in points])
+                            print(f"Found match for {word} starting at {start} due: {d.name}")
+                        found += 1
+
+    if _as_debug:
+        def _dot_grid(n: int):
+            def f():
+                for i in range(n):
+                    yield list("." * n)
+            return f
+        dots = Grid(_dot_grid(ws.rows))
+
+        def _mask_func():
+            for mask in found_mask:
+                yield mask
+
+        dots.mask(_mask_func)
+        print(dots.__repr__())
+
+    print(f"Found {found} instances of {word} in {input_file}")
+
+if __name__ == "__main__":
+    main()
+
