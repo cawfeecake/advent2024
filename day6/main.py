@@ -31,13 +31,18 @@ def main():
     parser.add_argument("-d", "--debug", help="Print debug statements", action="store_true")
     args = parser.parse_args()
 
-    _as_debug = args.debug
-    _do_extended = args.extended
-
     input_file = args.input_file
     #assert len(input_file) > 0, "Must provide filepath for input as the first argument"
     # TODO how does this handle passing in whitespace, invalid file characters?
+    #      what other checks should we do here to be robust? check if file exists before trying to `open()`?
 
+    # save: starting map, set of visited spaces
+    part_1(input_file, args.debug)
+    if args.extended:
+        # will need to have function to run thru guard path and return whether or not it loops
+        part_2(args.debug)
+
+def part_1(input_file: str, debug: bool) -> None:
     def open_and_parse_input():
         with open(input_file, "r") as file:
             for line in file:
@@ -46,7 +51,7 @@ def main():
                     yield row.lower()
     _map = Grid(open_and_parse_input)
     assert _map.rows > 0, "Input file must not be empty!"
-    if _as_debug:
+    if debug:
         print(_map)
 
     guard_at, guard_travel_dir = (-1, -1), (0, 0)  # both (first) invalid states for types
@@ -66,7 +71,7 @@ def main():
     # and then to get all points traveled, it's `keys()`
     spaces_traveled = {}
     while True:
-        if _as_debug:
+        if debug:
             print(f"Guard is at {guard_at} and heading: {guard_travel_dir}")
             # TODO:
             # - print out _map each time masked with `spaces_traveled` (create function)
@@ -81,7 +86,7 @@ def main():
         # determine next space for guard by looking ahead...
         up_ahead_pts, guard_on_map = _map.get_points(guard_at, guard_travel_dir, 2)
         if not guard_on_map:
-            if _as_debug:
+            if debug:
                 print("Guard has gone off the map!")
             break
 
@@ -91,12 +96,12 @@ def main():
         # take action if we need to turn...
         if _map.get_value(up_ahead_x, up_ahead_y) == "#":
             guard_travel_dir = GUARD_TURNS[guard_travel_dir]
-            if _as_debug:
+            if debug:
                 print(f"Guard has turned and is heading: {guard_travel_dir}")
 
             up_ahead_pts, guard_on_map = _map.get_points(guard_at, guard_travel_dir, 2)
             if not guard_on_map:
-                if _as_debug:
+                if debug:
                     print("Guard has turned off the map!")
                 break
 
@@ -106,7 +111,7 @@ def main():
             # ... possible we hit a wall again, so will now be clear going opposite direction from where we are at now...
             if _map.get_value(up_ahead_x, up_ahead_y) == "#":
                 guard_travel_dir = GUARD_TURNS[guard_travel_dir]
-                if _as_debug:
+                if debug:
                     print(f"Guard has hit a wall a second time, and will now head: {guard_travel_dir}")
             else:
                 guard_at = up_ahead
@@ -115,14 +120,14 @@ def main():
 
         if guard_at in spaces_traveled:
             traveled_directions = spaces_traveled[guard_at]
-            if _as_debug:
+            if debug:
                 print(f"Guard has been here before traveling the direction(s): {traveled_directions}")
             if guard_travel_dir in traveled_directions:
-                if _as_debug:
+                if debug:
                     print(f"Guard has completed a loop!")
                 break
 
-    if _as_debug:
+    if debug:
         def _mask_func():
             for s in spaces_traveled.keys():
                 yield s, "X"
@@ -131,6 +136,9 @@ def main():
         print(masked_map)
 
     print(f"Guard travels {len(spaces_traveled)} spaces on map in {input_file}")
+
+def part_2(debug: bool) -> None:
+    pass
 
 if __name__ == "__main__":
     main()
