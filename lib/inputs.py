@@ -7,8 +7,13 @@ def non_empty_str(s: str) -> str:
         raise argparse.ArgumentTypeError("Can't be empty!")
     return s
 
-def non_empty_upper_str(s: str) -> str:
-    return non_empty_str(s).upper()
+def upper_str(s: str) -> str:
+    return s.upper()
+
+def odd_length_str(s: str) -> str:
+    if len(s) % 2 == 0:
+        raise argparse.ArgumentTypeError("Can't be of even length!")
+    return s
 
 def non_empty_upper_grid(input_file: str) -> Grid:
     try:

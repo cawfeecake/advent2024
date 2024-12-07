@@ -77,6 +77,14 @@ def dot_copy(source: Grid) -> Callable[[], Generator[list[list[any]], None, None
             yield source.cols(i) * "."
     return f
 
+def points_mask(source: Grid, points: list[(int, int)]) -> Callable[[], Generator[list[((int, int), any)], None, None]]:
+    def f():
+        for pt in points:
+            x, y = pt
+            mask_value = source.get_value(x, y)
+            yield pt, mask_value
+    return f
+
 def lines_mask(source: Grid, lines: list[((int, int), Direction, int)]) -> Callable[[], Generator[list[((int, int), any)], None, None]]:
     def f():
         for start, direction, length in lines:

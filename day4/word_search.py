@@ -2,14 +2,19 @@ import argparse
 
 from lib.directions import Direction
 from lib.grids import Grid, dot_copy, lines_mask
-from lib.inputs import non_empty_upper_grid, non_empty_upper_str
+from lib.inputs import non_empty_upper_grid
+from lib.inputs import non_empty_str, upper_str
 from lib.strs import is_palindrome
 
 def main():
+    def input_target_word_type(s: str) -> str:
+        s = non_empty_str(s)
+        return upper_str(s)
+
     parser = argparse.ArgumentParser(
             description="Reports the number of times the given word is found in the input word search.")
-    parser.add_argument("target_word", type=non_empty_upper_str, help="The word to search for")
-    # TODO describe `word_search` expected format
+    parser.add_argument("target_word", type=input_target_word_type, help="The word to search for")
+    # TODO describe `word_search_file` expected format
     parser.add_argument("word_search_file", type=non_empty_upper_grid, help="Path to a file containing a word search")
     parser.add_argument("-d", "--debug", help="Print debug statements", action="store_true")
     args = parser.parse_args()

@@ -1,92 +1,96 @@
-def check(grid: list[str], word: str, start: (int, int), update: (int, int)) -> bool:
-    x_update, y_update = update
-    assert not (x_update == 0 and y_update == 0), "at least 1 value of `update` must be non-zero"
+import argparse
 
-    x, y = start
-    word_i = 0
-    while (
-            y < len(grid) and x < len(grid[y]) # TODO: test if this conditional holds up for a non-square `grid`
-            and x >= 0 and y >=0 # note: prevents word from matching around across left-side/bottom-side
-        ):
-        if grid[y][x] != word[word_i]:
-            return False
+from lib.directions import Direction
+from lib.grids import Grid, dot_copy, points_mask
+from lib.inputs import non_empty_upper_grid
+from lib.inputs import non_empty_str, odd_length_str, upper_str
 
-        # update position in `word`, and see if we've seen it all...
-        word_i += 1
-        if word_i == len(word):
-            #print(f"Found match for {word} starting at {start} and going {update}") # DEBUG
-            return True
+def get_slash_points(grid: Grid, start: (int, int), slash: (Direction, Direction), length: str) -> (list[(int, int)], bool):
+    leading_direction, tailing_direction = slash
+    lead, is_in_bounds = grid.get_points(start, leading_direction, length)
+    if not is_in_bounds:
+        return [], False
+    lead = lead[1:] 
+    lead = list(reversed(lead))
 
-        # update where to check next...
-        x, y = x + x_update, y + y_update
+    tail, is_in_bounds = grid.get_points(start, tailing_direction, length)
+    if not is_in_bounds:
+        return [], False
+    
+    return lead + tail, True
 
-    return False
+forward_slash = (Direction.RIGHT_AND_UP, Direction.LEFT_AND_DOWN)
+back_slash = (Direction.RIGHT_AND_DOWN, Direction.LEFT_AND_UP)
 
-def check_around_in_direction(grid, prefix, suffix, start, direction):
-    start_x, start_y = start
-    direction_x, direction_y = direction
-    if check(grid, prefix[::-1], (start_x + direction_x, start_y + direction_y), direction):
-        return check(grid, suffix, (start_x - direction_x, start_y - direction_y), (direction_x * -1, direction_y * -1))
-    return False
+def get_x_points(grid: Grid, start: (int, int), length: int) -> (list[(int, int)], bool):
+    both, is_in_bounds = get_slash_points(grid, start, forward_slash, length)
+    _both, _is_in_bounds = get_slash_points(grid, start, back_slash, length)
+    both += _both
+    is_in_bounds &= _is_in_bounds
+    return both, is_in_bounds
 
-# Helpers: individual directions that make an "X" (if starting from center)
-def check_left_and_up(grid, prefix, suffix, start):
-    direction = (1, -1)
-    return check_around_in_direction(grid, prefix, suffix, start, direction)
+def match_slash(grid: Grid, start: (int, int), slash: (Direction, Direction), target_word: str) -> bool:
+    points, is_in_bounds = get_slash_points(grid, start, slash, len(target_word) // 2 + 1)
+    if not is_in_bounds:
+        return False
 
-def check_right_and_up(grid, prefix, suffix, start):
-    direction = (-1, -1)
-    return check_around_in_direction(grid, prefix, suffix, start, direction)
+    word = "".join([grid.get_value(x, y) for x, y in points])
+    reversed_word = word[::-1]
 
-def check_left_and_down(grid, prefix, suffix, start):
-    direction = (1, 1)
-    return check_around_in_direction(grid, prefix, suffix, start, direction)
+    return target_word == word or target_word == reversed_word
 
-def check_right_and_down(grid, prefix, suffix, start):
-    direction = (-1, 1)
-    return check_around_in_direction(grid, prefix, suffix, start, direction)
+def match_forward_slash(grid: Grid, start: (int, int), target_word: str) -> bool:
+    return match_slash(grid, start, forward_slash, target_word)
 
-# Helpers: true if "word" is either forwards or backwards along a slash of "X"
-def check_forward_slash(grid, prefix, suffix, start):
-    return check_left_and_up(grid, prefix, suffix, start) \
-        or check_right_and_down(grid, prefix, suffix, start)
+def match_back_slash(grid: Grid, start: (int, int), target_word: str) -> bool:
+    return match_slash(grid, start, back_slash, target_word)
 
-def check_back_slash(grid, prefix, suffix, start):
-    return check_right_and_up(grid, prefix, suffix, start) \
-        or check_left_and_down(grid, prefix, suffix, start)
+def main():
+    def input_target_word_type(s: str) -> str:
+        s = non_empty_str(s)
+        s = odd_length_str(s)
+        return upper_str(s)
 
-import sys
+    parser = argparse.ArgumentParser(
+            description="Reports the number of times the given word is found in the input word search when shaped as an \"X\".")
+    parser.add_argument("target_word", type=input_target_word_type, help="The word to search for (must be of an odd length)")
+    # TODO describe `word_search_file` expected format
+    parser.add_argument("word_search_file", type=non_empty_upper_grid, help="Path to a file containing a word search")
+    parser.add_argument("-d", "--debug", help="Print debug statements", action="store_true")
+    args = parser.parse_args()
 
-# TODO: formalize `assert` checks (i.e. program boundaries)
+    # Program flags
+    debug = args.debug
 
-word = sys.argv[1]
-# assumes no whitespace in `word`
-assert len(word) > 0, "Must provide a word to search for as the first argument"
-assert len(word) % 2 == 1, "Search word must be of an odd length to have a center"
-word = word.lower()
+    # Program inputs
+    target = args.target_word
+    word_grid = args.word_search_file
 
-input_file = sys.argv[2]
-# assumes no whitespace in `input_file`
-assert len(input_file) > 0, "Must provide input's filepath as the second argument"
+    #prefix, center, suffix = st[:len(st) // 2], st[len(st) // 2], st[len(st) // 2 + 1:]  # for odd length `st`
+    center_letter = target[len(target) // 2]
+    found_xs = []
+    # TODO optimize to skip looking in first/last len() - 1 / 2 rows, columns
+    for y in range(word_grid.rows):
+        for x in range(word_grid.cols(y)):
+            if word_grid.get_value(x, y) == center_letter:
+                if match_forward_slash(word_grid, (x, y), target) \
+                        and match_back_slash(word_grid, (x, y), target):
+                    if debug:
+                        print(f"Found match for \"{target}\" centered at {(x, y)}!")
+                    found_xs.append((x, y))
 
-grid = []
-with open(input_file, "r") as file:
-    for line in file:
-        row = line.strip() # `.strip()` removes leading and trailing whitespace
-        if len(row) > 0:
-            grid.append(row.lower())
-assert len(grid) > 0, "Input file must not be empty"
+    if debug:
+        dots = Grid(dot_copy(word_grid))
 
-prefix, center, suffix = word[:len(word) // 2], word[len(word) // 2], word[len(word) // 2 + 1:]
-found = 0
-# TODO: optimize to skip looking in first/last len() - 1 / 2 rows, columns
-for i in range(len(grid)):
-    row = grid[i]
-    for j in range(len(row)):
-        if row[j] == center:
-            if check_forward_slash(grid, prefix, suffix, (j, i)) \
-                    and check_back_slash(grid, prefix, suffix, (j, i)):
-                print(f"Found match for {word} centered at ({j}, {i})") # DEBUG
-                found += 1
+        all_points = []
+        for x in found_xs:
+            x_points, _ = get_x_points(word_grid, x, len(target) // 2 + 1)
+            all_points.extend(x_points)
 
-print(f"Found {found} \"X\" of the word {word} in {input_file}")
+        masked_dots = dots.mask(points_mask(word_grid, all_points))
+        print(masked_dots)
+
+    print(f"\"{target}\" can be found {len(found_xs)} time{"" if len(found_xs) == 1 else "s"} in the shape of an \"X\".")
+
+if __name__ == "__main__":
+    main()
