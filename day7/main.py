@@ -13,11 +13,11 @@ def main():
     # - how does `argparse` handle... whitespace? quotes? characters that are invalid for a file path?
     # - to be robust, should we attempt to open file and wrap in try block?
 
-    struct = part_1(input_file, args.debug)
-    if args.extended:
-        part_2(struct, args.debug)
+    # `part_1()` is when `assert not args.extended`
+    # `part_2()` is when `assert args.extended`
+    part_1(input_file, args.extended, args.debug)
 
-def can_reach(goal: int, nums: list[int], debug: bool) -> bool:
+def can_reach(goal: int, nums: list[int], extended: bool, debug: bool) -> bool:
     #assert len(nums) > 0
     active = [(nums[0], str(nums[0]), nums[1:])]
     while len(active) > 0:
@@ -34,13 +34,15 @@ def can_reach(goal: int, nums: list[int], debug: bool) -> bool:
                         next_active.append((curr + _nums[0], f"{curr_str} + {_nums[0]}", _nums[1:]))
                     if curr * _nums[0] <= goal:
                         next_active.append((curr * _nums[0], f"{curr_str} * {_nums[0]}", _nums[1:]))
+                    if extended and int(f"{curr}{_nums[0]}") <= goal:
+                        next_active.append((int(f"{curr}{_nums[0]}"), f"{curr_str} || {_nums[0]}", _nums[1:]))
 
         active = next_active
     if debug:
         print(f"No way to reach {goal} with: {nums}...")
     return False
 
-def part_1(input_file: str, debug: bool) -> any:
+def part_1(input_file: str, extended: bool, debug: bool) -> any:
     _input = []
     # list[(int, list[int])]
     with open(input_file, "r") as file:
@@ -55,7 +57,7 @@ def part_1(input_file: str, debug: bool) -> any:
 
     count, s = 0, 0
     for goal, nums in _input:
-        if can_reach(goal, nums, debug):
+        if can_reach(goal, nums, extended, debug):
             count += 1
             s += goal
             
