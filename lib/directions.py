@@ -9,4 +9,3 @@ class Direction(Enum):
     LEFT_AND_DOWN = (-1, 1)
     RIGHT_AND_UP = (1, -1)
     RIGHT_AND_DOWN = (1, 1)
-
