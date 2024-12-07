@@ -2,7 +2,6 @@ import argparse
 
 from .grids import Grid
 
-#def base_parser = argparse.ArgumentParser()
 BASE_PARSER = argparse.ArgumentParser(add_help=False)
 BASE_PARSER.add_argument("-d", "--debug", help="Print debug statements", action="store_true")
 
