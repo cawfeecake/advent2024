@@ -147,22 +147,27 @@ def part_1(input_file: str, debug: bool) -> (Grid, (int, int), Direction, dict[(
 
     return _map, guard_start, guard_heading, traveled
 
+def determine_loop(mask_point: (int, int), _map: Grid, guard_start: (int, int), guard_heading: Direction, debug: bool) -> bool:
+    def mask_func():
+        yield mask_point, "#"
+
+    map_with_ob = _map.mask(mask_func)
+
+    _, is_loop = get_traveled(map_with_ob, guard_start, guard_heading, debug)
+
+    if debug and is_loop:
+        print(f"Created new loop by adding obstacle ('#') at {mask_point}!")
+
+    return is_loop
+
 def part_2(_map: Grid, guard_start: (int, int), guard_heading: Direction, points_to_check: list[(int, int)], debug: bool) -> None:
-    new_loops = 0
-    for pt in points_to_check:
-        def mask_func():
-            yield pt, "#"
+    func_args = [(pt, _map, guard_start, guard_heading, debug) for pt in points_to_check]
 
-        map_with_ob = _map.mask(mask_func)
-        # TODO gate this behind a double verbose debug
-        #if debug:
-        #    print(map_with_ob)
+    from multiprocessing import Pool
 
-        _, is_loop = get_traveled(map_with_ob, guard_start, guard_heading, debug)
-        if is_loop:
-            if debug:
-                print(f"Created new loop by adding '#' to {pt}!")
-            new_loops += 1
+    with Pool() as pool:
+        results = pool.starmap(determine_loop, func_args)
+        new_loops = sum(results)
 
     print(f"Guard can be made to loop in {new_loops} cases")
 
