@@ -2,35 +2,36 @@ import argparse
 
 from lib.directions import Direction
 from lib.grids import Grid, dot_copy, points_mask
+from lib.inputs import BASE_PARSER
 from lib.inputs import non_empty_upper_grid
 from lib.inputs import non_empty_str, odd_length_str, upper_str
 
-def get_slash_points(grid: Grid, start: (int, int), slash: (Direction, Direction), length: str) -> (list[(int, int)], bool):
+def _get_slash_points(grid: Grid, start: (int, int), slash: (Direction, Direction), length: str) -> (list[(int, int)], bool):
     leading_direction, tailing_direction = slash
     lead, is_in_bounds = grid.get_points(start, leading_direction, length)
     if not is_in_bounds:
         return [], False
-    lead = lead[1:] 
+    lead = lead[1:]
     lead = list(reversed(lead))
 
     tail, is_in_bounds = grid.get_points(start, tailing_direction, length)
     if not is_in_bounds:
         return [], False
-    
+
     return lead + tail, True
 
-forward_slash = (Direction.RIGHT_AND_UP, Direction.LEFT_AND_DOWN)
-back_slash = (Direction.RIGHT_AND_DOWN, Direction.LEFT_AND_UP)
+_forward_slash = (Direction.RIGHT_AND_UP, Direction.LEFT_AND_DOWN)
+_back_slash = (Direction.RIGHT_AND_DOWN, Direction.LEFT_AND_UP)
 
 def get_x_points(grid: Grid, start: (int, int), length: int) -> (list[(int, int)], bool):
-    both, is_in_bounds = get_slash_points(grid, start, forward_slash, length)
-    _both, _is_in_bounds = get_slash_points(grid, start, back_slash, length)
+    both, is_in_bounds = _get_slash_points(grid, start, _forward_slash, length)
+    _both, _is_in_bounds = _get_slash_points(grid, start, _back_slash, length)
     both += _both
     is_in_bounds &= _is_in_bounds
     return both, is_in_bounds
 
-def match_slash(grid: Grid, start: (int, int), slash: (Direction, Direction), target_word: str) -> bool:
-    points, is_in_bounds = get_slash_points(grid, start, slash, len(target_word) // 2 + 1)
+def _match_slash(grid: Grid, start: (int, int), slash: (Direction, Direction), target_word: str) -> bool:
+    points, is_in_bounds = _get_slash_points(grid, start, slash, len(target_word) // 2 + 1)
     if not is_in_bounds:
         return False
 
@@ -40,10 +41,10 @@ def match_slash(grid: Grid, start: (int, int), slash: (Direction, Direction), ta
     return target_word == word or target_word == reversed_word
 
 def match_forward_slash(grid: Grid, start: (int, int), target_word: str) -> bool:
-    return match_slash(grid, start, forward_slash, target_word)
+    return _match_slash(grid, start, _forward_slash, target_word)
 
 def match_back_slash(grid: Grid, start: (int, int), target_word: str) -> bool:
-    return match_slash(grid, start, back_slash, target_word)
+    return _match_slash(grid, start, _back_slash, target_word)
 
 def main():
     def input_target_word_type(s: str) -> str:
@@ -52,11 +53,12 @@ def main():
         return upper_str(s)
 
     parser = argparse.ArgumentParser(
+            parents=[BASE_PARSER],
             description="Reports the number of times the given word is found in the input word search when shaped as an \"X\".")
+
     parser.add_argument("target_word", type=input_target_word_type, help="The word to search for (must be of an odd length)")
     # TODO describe `word_search_file` expected format
     parser.add_argument("word_search_file", type=non_empty_upper_grid, help="Path to a file containing a word search")
-    parser.add_argument("-d", "--debug", help="Print debug statements", action="store_true")
     args = parser.parse_args()
 
     # Program flags
