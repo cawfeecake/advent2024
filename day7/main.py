@@ -42,7 +42,12 @@ def can_reach(goal: int, nums: list[int], extended: bool, debug: bool) -> bool:
         print(f"No way to reach {goal} with: {nums}...")
     return False
 
-def part_1(input_file: str, extended: bool, debug: bool) -> any:
+def sum_reachable(goal: int, nums: list[int], extended: bool, debug: bool) -> int:
+    if can_reach(goal, nums, extended, debug):
+        return goal
+    return 0
+
+def part_1(input_file: str, extended: bool, debug: bool) -> None:
     _input = []
     # list[(int, list[int])]
     with open(input_file, "r") as file:
@@ -55,17 +60,15 @@ def part_1(input_file: str, extended: bool, debug: bool) -> any:
                 _input.append((goal, nums))
     assert len(_input) > 0, "Input file must not be empty!"
 
-    count, s = 0, 0
-    for goal, nums in _input:
-        if can_reach(goal, nums, extended, debug):
-            count += 1
-            s += goal
-            
-    print(f"Was able to reach goal with {count} of the input rows for a sum of {s}")
-    return None
+    func_args = [(goal, nums, extended, debug) for goal, nums in _input]
 
-def part_2(struct: any, debug: bool) -> None:
-    pass
+    from multiprocessing import Pool
+
+    with Pool() as pool:
+        results = pool.starmap(sum_reachable, func_args)
+        count, s = len([i for i in results if i > 0]), sum(results)
+
+    print(f"Was able to reach goal with {count} of the input rows for a sum of {s}")
 
 if __name__ == "__main__":
     main()
