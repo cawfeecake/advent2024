@@ -28,9 +28,6 @@ class Grid:
             rows.append("".join(row))
         return "\n".join(rows)
 
-    def __repr__(self):
-        return self.__str__()
-
     # care: will error if the rows of `self.grid` don't support assignment (e.g. if they are strings)
     # care: will error if `assert y >= self.rows` or `assert x >= self.grid[y]
     def set_value(self, x: int, y: int, value: any) -> None:
