@@ -1,7 +1,7 @@
 import argparse
 
-from lib.grids import Grid
 from lib.directions import Direction
+from lib.grids import Grid
 
 GUARD_REPRESENTATIONS = {
     "<": Direction.LEFT,
