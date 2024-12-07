@@ -24,6 +24,67 @@ GUARD_TURNS = {
     Direction.RIGHT: Direction.DOWN,
 }
 
+def get_traveled(_map: Grid, guard_start: (int, int), guard_heading: Direction, debug: bool) -> (dict[(int, int), list[Direction]], bool):
+    guard_at = guard_start
+    traveled = {}
+    while True:
+        if debug:
+            print(f"Guard is at {guard_at} and heading: {guard_heading}")
+            # TODO:
+            # - print out _map each time masked with `traveled` (create function)
+            # - (opt) have it "locked" behind 2nd level of debug
+            #print(masked_map)
+
+        if guard_at in traveled:
+            traveled[guard_at].append(guard_heading)
+        else:
+            traveled[guard_at] = [guard_heading]
+
+        # determine next space guard will go (i.e. look ahead)...
+        next_points, next_point_in_bounds = _map.get_points(guard_at, guard_heading, 2)
+        if not next_point_in_bounds:
+            if debug:
+                print("Guard has gone off the map!")
+            return traveled, False
+
+        next_point = next_points[-1]
+        next_x, next_y = next_point
+
+        # take action if we need to turn...
+        if _map.get_value(next_x, next_y) == "#":
+            guard_heading = GUARD_TURNS[guard_heading]
+            if debug:
+                print(f"Guard has turned and is heading: {guard_heading}")
+
+            next_points, next_point_in_bounds = _map.get_points(guard_at, guard_heading, 2)
+            if not next_point_in_bounds:
+                if debug:
+                    print("Guard has turned off the map!")
+                return traveled, False
+
+            next_point = next_points[-1]
+            next_x, next_y = next_point
+
+            # ... possible we hit a wall again, so will now be clear going opposite direction from where we are at now...
+            if _map.get_value(next_x, next_y) == "#":
+                guard_heading = GUARD_TURNS[guard_heading]
+                if debug:
+                    print(f"Guard has hit a wall a second time, and will now head: {guard_heading}")
+            else:
+                guard_at = next_point
+        else:
+            guard_at = next_point
+
+        if guard_at in traveled:
+            traveled_directions = traveled[guard_at]
+            if debug:
+                print(f"Guard has been here before traveling the direction(s): {traveled_directions}")
+
+            if guard_heading in traveled_directions:
+                if debug:
+                    print(f"Guard has completed a loop!")
+                return traveled, True
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("input_file")
@@ -33,16 +94,17 @@ def main():
 
     input_file = args.input_file
     #assert len(input_file) > 0, "Must provide filepath for input as the first argument"
-    # TODO how does this handle passing in whitespace, invalid file characters?
-    #      what other checks should we do here to be robust? check if file exists before trying to `open()`?
+    # TODO:
+    # - how does `argparse` handle... whitespace? quotes? characters that are invalid for a file path?
+    # - to be robust, should we attempt to open file and wrap in try block?
 
-    # save: starting map, set of visited spaces
-    part_1(input_file, args.debug)
+    _map, guard_start, guard_starting_heading, first_traveled_path = part_1(input_file, args.debug)
     if args.extended:
-        # will need to have function to run thru guard path and return whether or not it loops
-        part_2(args.debug)
+        points_to_check = list(first_traveled_path.keys())
+        points_to_check.remove(guard_start)
+        part_2(_map, guard_start, guard_starting_heading, points_to_check, args.debug)
 
-def part_1(input_file: str, debug: bool) -> None:
+def part_1(input_file: str, debug: bool) -> (Grid, (int, int), Direction, dict[(int, int), list[Direction]]):
     def open_and_parse_input():
         with open(input_file, "r") as file:
             for line in file:
@@ -54,90 +116,39 @@ def part_1(input_file: str, debug: bool) -> None:
     if debug:
         print(_map)
 
-    guard_at, guard_travel_dir = (-1, -1), (0, 0)  # both (first) invalid states for types
-    guard_on_map = False
+
+    guard_start, guard_heading = (-1, -1), (0, 0)  # both (first) invalid states for types
+    is_valid_map = False
     for y in range(_map.rows):
-        row = _map.grid[y]
-        for x in range(len(row)):
+        for x in range(_map.cols(y)):
             c = _map.get_value(x, y)
             if (c in GUARD_REPRESENTATIONS.keys()):
-                guard_at = (x, y)
-                guard_travel_dir = GUARD_REPRESENTATIONS[c]
-                guard_on_map = True
+                guard_start = (x, y)
+                guard_heading = GUARD_REPRESENTATIONS[c]
+                is_valid_map = True
                 break
-    assert guard_on_map, "No \"guard\" ('v', '>', '<', or '^') character found on map!"
+    assert is_valid_map, "No \"guard\" ('v', '>', '<', or '^') character found on map!"
 
-    # spaces_traveled needs to be a map of points to directions traveling so we can tell when to stop
-    # and then to get all points traveled, it's `keys()`
-    spaces_traveled = {}
-    while True:
-        if debug:
-            print(f"Guard is at {guard_at} and heading: {guard_travel_dir}")
-            # TODO:
-            # - print out _map each time masked with `spaces_traveled` (create function)
-            # - (opt) have it "locked" behind 2nd level of debug
-            #print(masked_map)
-
-        if guard_at in spaces_traveled:
-            spaces_traveled[guard_at].append(guard_travel_dir)
-        else:
-            spaces_traveled[guard_at] = [guard_travel_dir]
-
-        # determine next space for guard by looking ahead...
-        up_ahead_pts, guard_on_map = _map.get_points(guard_at, guard_travel_dir, 2)
-        if not guard_on_map:
-            if debug:
-                print("Guard has gone off the map!")
-            break
-
-        up_ahead = up_ahead_pts[-1]
-        up_ahead_x, up_ahead_y = up_ahead
-
-        # take action if we need to turn...
-        if _map.get_value(up_ahead_x, up_ahead_y) == "#":
-            guard_travel_dir = GUARD_TURNS[guard_travel_dir]
-            if debug:
-                print(f"Guard has turned and is heading: {guard_travel_dir}")
-
-            up_ahead_pts, guard_on_map = _map.get_points(guard_at, guard_travel_dir, 2)
-            if not guard_on_map:
-                if debug:
-                    print("Guard has turned off the map!")
-                break
-
-            up_ahead = up_ahead_pts[-1]
-            up_ahead_x, up_ahead_y = up_ahead
-
-            # ... possible we hit a wall again, so will now be clear going opposite direction from where we are at now...
-            if _map.get_value(up_ahead_x, up_ahead_y) == "#":
-                guard_travel_dir = GUARD_TURNS[guard_travel_dir]
-                if debug:
-                    print(f"Guard has hit a wall a second time, and will now head: {guard_travel_dir}")
-            else:
-                guard_at = up_ahead
-        else:
-            guard_at = up_ahead
-
-        if guard_at in spaces_traveled:
-            traveled_directions = spaces_traveled[guard_at]
-            if debug:
-                print(f"Guard has been here before traveling the direction(s): {traveled_directions}")
-            if guard_travel_dir in traveled_directions:
-                if debug:
-                    print(f"Guard has completed a loop!")
-                break
+    traveled, is_loop = get_traveled(_map, guard_start, guard_heading, debug)
+    # `traveled` is `dict[(int, int), list[Direction]]`
+    # represents: which points were visted, and which direction the guard was going at the time
 
     if debug:
         def _mask_func():
-            for s in spaces_traveled.keys():
+            for s in traveled.keys():
                 yield s, "X"
 
         masked_map = _map.mask(_mask_func)
         print(masked_map)
 
-    print(f"Guard travels {len(spaces_traveled)} spaces on map in {input_file}")
+    is_loop_str = ""
+    if is_loop:
+        is_loop_str = "(looping) "
+    print(f"Guard travels {len(traveled)} spaces {is_loop_str}on map in {input_file}")
 
-def part_2(debug: bool) -> None:
+    return _map, guard_start, guard_heading, traveled
+
+def part_2(_map: Grid, guard_start: (int, int), guard_heading: Direction, points_to_check: list[(int, int)], debug: bool) -> None:
     pass
 
 if __name__ == "__main__":
