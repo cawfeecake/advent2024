@@ -12,6 +12,23 @@ python -m dayN.main --debug dayN/input.txt arg2 arg3
 PYTHONPATH=.. python -m main --debug input.txt arg2 arg3
 ```
 
+<details><summary>Clean up Python project...</summary>
+
+Got a command to delete `/__pycache__`; however, it does throw errors... for some reason, e.g.:
+
+```zsh
+# ran when in `/advent` dir
+$ find . -name "__pycache__" -type d -exec rm -r {} \;
+find: ./day4/__pycache__: No such file or directory
+find: ./day7/__pycache__: No such file or directory
+find: ./lib/__pycache__: No such file or directory
+find: ./day6/__pycache__: No such file or directory
+```
+
+The above had `/__pycache__`, so not sure why the error.
+
+</details>
+
 # Downloading the input
 
 Need to go to the dev tools on browser and find the `"session"` cookie; copy value to env var: `SESSION="$(pbpaste)"`
