@@ -67,7 +67,7 @@ word = word.lower()
 
 input_file = sys.argv[2]
 # assumes no whitespace in `input_file`
-assert len(input_file) > 0, "Must provide a filepath for the input to search in as the second argument"
+assert len(input_file) > 0, "Must provide input's filepath as the second argument"
 
 grid = []
 with open(input_file, "r") as file:
