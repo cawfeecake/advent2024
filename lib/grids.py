@@ -3,7 +3,7 @@ from typing import Callable, Generator
 from .directions import Direction
 
 class Grid:
-    def __init__(self, rows: Callable[[], Generator[list[any], None, None]]):
+    def __init__(self, rows: Callable[[], Generator[list[list[any]], None, None]]):
         self._grid = []
 
         for row in rows():
@@ -53,6 +53,7 @@ class Grid:
         points, is_all_in_bounds = self.get_points(start, direction, length)
         return [self.get_value(x, y) for x, y in points], is_all_in_bounds
 
+    #                                            v `masked_point`
     def mask(self, masks: Callable[[], Generator[list[((int, int), any)], None, None]]) -> "Grid":
         def copy_grid():
             for y in range(self.rows):
@@ -69,3 +70,25 @@ class Grid:
             masked_copy.set_value(x, y, mask)
 
         return masked_copy
+
+def dot_copy(source: Grid) -> Callable[[], Generator[list[list[any]], None, None]]:
+    def f():
+        for i in range(source.rows):
+            yield source.cols(i) * "."
+    return f
+
+def lines_mask(source: Grid, lines: list[((int, int), Direction, int)]) -> Callable[[], Generator[list[((int, int), any)], None, None]]:
+    def f():
+        for start, direction, length in lines:
+            # care: `direction` could be None; however, should only be the case whenever `length` is 1
+            if length == 1:
+                x, y = start
+                if source.is_in_bounds(x, y):
+                    points = [start]
+            else:
+                points, _ = source.get_points(start, direction, length)
+
+            for x, y in points:
+                mask_value = source.get_value(x, y)
+                yield (x, y), mask_value
+    return f

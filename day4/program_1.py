@@ -1,15 +1,16 @@
 import argparse
 
 from lib.directions import Direction
-from lib.grids import Grid
-from lib.inputs import non_empty_str
+from lib.grids import Grid, dot_copy, lines_mask
+from lib.inputs import non_empty_upper_grid, non_empty_upper_str
+from lib.strs import is_palindrome
 
 def main():
     parser = argparse.ArgumentParser(
-            description="Reports the number of times the given word is found in the input.")
-    parser.add_argument("target_word", type=non_empty_str, help="The word to search for")
-    # TODO look into argparse.FileType
-    parser.add_argument("word_search_file", help="Path to the file containing the word search")
+            description="Reports the number of times the given word is found in the input word search.")
+    parser.add_argument("target_word", type=non_empty_upper_str, help="The word to search for")
+    # TODO describe `word_search` expected format
+    parser.add_argument("word_search", type=non_empty_upper_grid, help="Path to a file containing a word search")
     parser.add_argument("-d", "--debug", help="Print debug statements", action="store_true")
     args = parser.parse_args()
 
@@ -17,54 +18,39 @@ def main():
     debug = args.debug
 
     # Program inputs
-    word = args.target_word.upper()
+    target = args.target_word
+    ws = args.word_search
 
-    input_file = args.word_search_file
-    try:
-        with open(input_file, "r") as file:
-            def parse_input():
-                for line in file:
-                    row = line.strip()  # `.strip()` removes leading and trailing whitespace
-                    if len(row) > 0:
-                        yield row.upper()
-            ws = Grid(parse_input)
-    except FileNotFoundError:
-        parser.error(f"Input file ({input_file}) doesn't exist!")
-
-    if ws.rows == 0:
-        parser.error(f"Input file ({input_file}) is empty!")
-
-    word_start = word[0]
-    found, found_mask = 0, []
+    target_start = target[0]
+    target_is_palindrome = is_palindrome(target)
+    found_words = set()
     for y in range(ws.rows):
         for x in range(ws.cols(y)):
-            if ws.get_value(x, y) == word_start:
+            if ws.get_value(x, y) == target_start:
                 start = (x, y)
-                for d in Direction:  # looks for `target_word` emanating in every direction (8)
-                    values, is_all_in_bounds = ws.get_values(start, d, len(word))
-                    if is_all_in_bounds and "".join(values) == word:
-                        if debug:
-                            points, _ = ws.get_points(start, d, len(word))
-                            found_mask.extend([((x, y), ws.get_value(x, y)) for x, y in points])
-                            print(f"[DEBUG] Match for \"{word}\" starting from {start} and going {d.name}!")
-                        found += 1
+                if len(target) > 1:
+                    directions_to_check = [d for d in Direction]  # looks for `target` emanating in all (8) directions
+                    if target_is_palindrome:
+                        #                                              v dx > 1, i.e. a Direction that goes right
+                        directions_to_check = [d for d in Direction if d.value[0] > 0 or d == Direction.UP]
+
+                    for d in directions_to_check:
+                        values, is_all_in_bounds = ws.get_values(start, d, len(target))
+                        if is_all_in_bounds and "".join(values) == target:
+                            if debug:
+                                print(f"[DEBUG] Match for \"{target}\" starting from {start} and going {d.name}!")
+                            found_words.add((start, d, len(target)))
+                else:
+                    if debug:
+                        print(f"[DEBUG] Match for \"{target}\" at {start}!")
+                    found_words.add((start, None, 1))
 
     if debug:
-        def dot_grid(n: int):
-            def f():
-                for i in range(n):
-                    yield "." * n
-            return f
-        dots = Grid(dot_grid(ws.rows))
+        dots = Grid(dot_copy(ws))
+        masked_dots = dots.mask(lines_mask(ws, found_words))
+        print(masked_dots)
 
-        def mask_func():
-            for mask in found_mask:
-                yield mask
-
-        dots_masked = dots.mask(mask_func)
-        print(dots_masked)
-
-    print(f"In {input_file} \"{word}\" is found {found} times.")
+    print(f"\"{target}\" can be found {len(found_words)} time{"" if len(found_words) == 1 else "s"}.")
 
 if __name__ == "__main__":
     main()
