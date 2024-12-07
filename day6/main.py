@@ -116,7 +116,6 @@ def part_1(input_file: str, debug: bool) -> (Grid, (int, int), Direction, dict[(
     if debug:
         print(_map)
 
-
     guard_start, guard_heading = (-1, -1), (0, 0)  # both (first) invalid states for types
     is_valid_map = False
     for y in range(_map.rows):
@@ -134,11 +133,11 @@ def part_1(input_file: str, debug: bool) -> (Grid, (int, int), Direction, dict[(
     # represents: which points were visted, and which direction the guard was going at the time
 
     if debug:
-        def _mask_func():
+        def mask_func():
             for s in traveled.keys():
                 yield s, "X"
 
-        masked_map = _map.mask(_mask_func)
+        masked_map = _map.mask(mask_func)
         print(masked_map)
 
     is_loop_str = ""
@@ -149,7 +148,23 @@ def part_1(input_file: str, debug: bool) -> (Grid, (int, int), Direction, dict[(
     return _map, guard_start, guard_heading, traveled
 
 def part_2(_map: Grid, guard_start: (int, int), guard_heading: Direction, points_to_check: list[(int, int)], debug: bool) -> None:
-    pass
+    new_loops = 0
+    for pt in points_to_check:
+        def mask_func():
+            yield pt, "#"
+
+        map_with_ob = _map.mask(mask_func)
+        # TODO gate this behind a double verbose debug
+        #if debug:
+        #    print(map_with_ob)
+
+        _, is_loop = get_traveled(map_with_ob, guard_start, guard_heading, debug)
+        if is_loop:
+            if debug:
+                print(f"Created new loop by adding '#' to {pt}!")
+            new_loops += 1
+
+    print(f"Guard can be made to loop in {new_loops} cases")
 
 if __name__ == "__main__":
     main()
