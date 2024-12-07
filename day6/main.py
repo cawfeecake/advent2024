@@ -1,5 +1,4 @@
-import os
-import sys
+import argparse
 
 from lib.grids import Grid
 from lib.directions import Direction
@@ -26,15 +25,18 @@ GUARD_TURNS = {
 }
 
 def main():
-    # TODO use day5 parsing strategy
-    input_file = sys.argv[1]
-    assert len(input_file) > 0, "Must provide input's filepath as the first argument"
+    parser = argparse.ArgumentParser()
+    parser.add_argument("input_file")
+    parser.add_argument("-e", "--extended", help="Do both parts of the problem set (defaults to doing just the first", action="store_true")
+    parser.add_argument("-d", "--debug", help="Print debug statements", action="store_true")
+    args = parser.parse_args()
 
-    _as_debug = False
-    try:
-        _as_debug = os.environ["DEBUG"] == "1"
-    except:
-        pass
+    _as_debug = args.debug
+    _do_extended = args.extended
+
+    input_file = args.input_file
+    #assert len(input_file) > 0, "Must provide filepath for input as the first argument"
+    # TODO how does this handle passing in whitespace, invalid file characters?
 
     def open_and_parse_input():
         with open(input_file, "r") as file:
@@ -43,7 +45,7 @@ def main():
                 if len(row) > 0:
                     yield row.lower()
     _map = Grid(open_and_parse_input)
-    assert _map.rows > 0, "Input file must not be empty"
+    assert _map.rows > 0, "Input file must not be empty!"
     if _as_debug:
         print(_map)
 
@@ -58,7 +60,7 @@ def main():
                 guard_travel_dir = GUARD_REPRESENTATIONS[c]
                 guard_on_map = True
                 break
-    assert guard_on_map, "No \"guard\" ('v', '>', '<', or '^') found within input file"
+    assert guard_on_map, "No \"guard\" ('v', '>', '<', or '^') character found on map!"
 
     # spaces_traveled needs to be a map of points to directions traveling so we can tell when to stop
     # and then to get all points traveled, it's `keys()`
