@@ -10,7 +10,7 @@ def main():
             parents=[BASE_PARSER],
             description="Print the number of \"antinodes\" being produced on the input map")
     parser.add_argument("input_file", help="Path to a file that maps out the antenna")
-    parser.add_argument("-e", "--extended", help="Do both parts of the problem set (defaults to doing just the first", action="store_true")
+    parser.add_argument("-e", "--extended", help="Do second part of the problem set", action="store_true")
     args = parser.parse_args()
 
     input_file = args.input_file

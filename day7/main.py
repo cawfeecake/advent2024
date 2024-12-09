@@ -7,7 +7,7 @@ def main():
             parents=[BASE_PARSER],
             description="<TMP>")
     parser.add_argument("input_file")
-    parser.add_argument("-e", "--extended", help="Do both parts of the problem set (defaults to doing just the first", action="store_true")
+    parser.add_argument("-e", "--extended", help="Do second part of the problem set", action="store_true")
     args = parser.parse_args()
 
     input_file = args.input_file
