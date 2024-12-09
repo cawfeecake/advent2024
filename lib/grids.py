@@ -1,4 +1,4 @@
-from typing import Callable, Generator
+from typing import Callable, Generator, TypeVar
 
 from .directions import Direction
 
@@ -53,7 +53,18 @@ class Grid:
         points, is_all_in_bounds = self.get_points(start, direction, length)
         return [self.get_value(x, y) for x, y in points], is_all_in_bounds
 
-    #                                            v `masked_point`
+    T = TypeVar("T")  # accumulator type
+    #                                               |- type of `self.grid[][]`
+    #                                               v
+    def reduce(self, reducer: Callable[[(int, int), any, T], T], acc: T) -> T:
+        for y in range(self.rows):
+            for x in range(self.cols(y)):
+                val = self.get_value(x, y)
+                acc = reducer((x, y), val, acc)
+        return acc
+
+    #                    type of `masked_point` -----------------------|
+    #                                            |                     v
     def mask(self, masks: Callable[[], Generator[list[((int, int), any)], None, None]]) -> "Grid":
         def copy_grid():
             for y in range(self.rows):
