@@ -18,6 +18,14 @@ def odd_length_str(s: str) -> str:
         raise argparse.ArgumentTypeError("Can't be of even length!")
     return s
 
+def load_str_from_file(input_file: str) -> str:
+    with open(input_file, "r") as file:
+        lines = []
+        for line in file:
+            l = line.strip()  # `.strip()` removes leading and trailing whitespace
+            lines.append(l)
+        return "".join(lines)
+
 # Format is 1 character in file -> 1 space in grid
 # Each row of the file starts at the 0 for the x-coord.
 def load_grid_from_file(input_file: str) -> Grid:
