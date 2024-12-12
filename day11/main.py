@@ -22,35 +22,65 @@ def main():
 
     solver(input_file, blinks, args.extended, args.debug)
 
-def get_next(stone: int) -> list[int]:
-    if stone == 0:
-        return [1]
-    elif len((st := str(stone))) % 2 == 0:
-        if len(st) >= 4300:
-            print(st)
-        left = st[:len(st) // 2]
-        right = st[len(st) // 2:]
-        return [int(left), int(right)]
+def strip_leading_zeros(s: str) -> str:
+    result = s.lstrip("0")
+    if len(result) > 0:
+        return result
+    return "0"
+
+def get_next(stone: str) -> list[str]:
+    if stone == "0":
+        return ["1"]
+    elif len(stone) % 2 == 0:
+        left = stone[:len(stone) // 2]
+        right = strip_leading_zeros(stone[len(stone) // 2:])
+        return [left, right]
     else:
-        # note: `st` from walrus is in scope in this block
-        return [stone * 2024]
+        # [THIS IS AN OLD...] NOTE: `st` from walrus above is in scope here
+        return [f"{int(stone) * 2024}"]
 
 def solver(input_file: str, blinks: int, extended: bool, debug: bool):
-    stones = [int(n) for n in load_str_from_file(input_file).split(" ")]
+    stones = [n for n in load_str_from_file(input_file).split(" ")]
     if debug:
-        print(f"Initial stones: {stones}")
+        print(f"Starting stone configuration {len(stones)}:")
+        print(stones)
 
-    for i in range(blinks):
-        next_stones = []
-        for st in stones:
-            next_stones.extend(get_next(st))
-        stones = next_stones
+    if extended:
+        # order of stones isn't preserved, but that isn't significant to get an answer
 
-        if debug:
-            print(f"Stones after {i + 1} blinks:")
-            print(stones)
+        stone_counter = {st: 1 for st in stones}
+        for i in range(blinks):
+            next_stone_counter = {}
+            for st, count in stone_counter.items():
+                next_stones = get_next(st)
+                for next_st in next_stones:
+                    if next_st in next_stone_counter:
+                        next_stone_counter[next_st] = next_stone_counter[next_st] + count
+                    else:
+                        next_stone_counter[next_st] = count
+            stone_counter = next_stone_counter
 
-    print(f"Number of stones: {len(stones)}")
+            if debug:
+                print(f"[Blink {i + 1}] Number of stones: {sum([count for _, count in stone_counter.items()])}", end="")
+                print(f"; Number of unique stones: {len(stone_counter)}", end="")
+                print(f"; '0' count: {stone_counter['0'] if '0' in stone_counter else 0}", end="")
+                print(f"; '1' count: {stone_counter['1'] if '1' in stone_counter else 0}")
+
+        count = sum([count for _, count in stone_counter.items()])
+    else:
+        for i in range(blinks):
+            next_stones = []
+            for st in stones:
+                next_stones.extend(get_next(st))
+            stones = next_stones
+
+            if debug:
+                print(f"[Blink {i + 1}] Stones:")
+                print(stones)
+
+        count = len(stones)
+    
+    print(f"Total number of stones after {blinks} blinks: {count}")
 
 if __name__ == "__main__":
     main()
