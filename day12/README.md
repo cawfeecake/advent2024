@@ -25,3 +25,13 @@ We do the same thing as above, but instead of counting the fences needed, we rec
 will need a fence. After we have completed the above process, we will iterate through each group of plots and check
 each row and column 1 at a time to see how many contiguous plots in that row or column require a fence on the same side
 of the plot. Each unbroken sequence of plots is counted as a single face for that group.
+
+### Misc Dev
+
+This is a cool collection that I was using just for debugging:
+
+```python
+from collections import Counter
+```
+
+If given a list of items, will create a `dict` to keep track of the counts of each unique element.
